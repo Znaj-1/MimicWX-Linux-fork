@@ -168,6 +168,9 @@ echo "noVNC: http://localhost:6080/vnc.html"
 echo "API:   http://localhost:8899"
 echo "=============================="
 
+# 后台自动提取派生密钥 (90秒后运行, 等微信启动+扫码登录)
+/usr/local/bin/auto_extract_keys.sh &
+
 # 重启循环: 退出码 42 = 重启请求
 while true; do
   # 通过 su -c 运行, 加载已保存的环境变量, 保留 stdin

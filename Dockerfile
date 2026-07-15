@@ -126,13 +126,22 @@ RUN mkdir -p ~/.vnc && \
 RUN printf '#!/bin/bash\nunset SESSION_MANAGER\nunset DBUS_SESSION_BUS_ADDRESS\nexport XKL_XMODMAP_DISABLE=1\nexec startxfce4\n' > ~/.vnc/xstartup && \
     chmod +x ~/.vnc/xstartup
 
-# 启动脚本
+# 启动脚本 + 密钥提取工具
 USER root
 COPY docker/dbus-mimicwx.conf /etc/dbus-1/session.d/mimicwx.conf
 COPY docker/start.sh /usr/local/bin/start.sh
 COPY docker/extract_key.py /usr/local/bin/extract_key.py
-RUN sed -i 's/\r$//' /usr/local/bin/start.sh /usr/local/bin/extract_key.py && \
-    chmod +x /usr/local/bin/start.sh /usr/local/bin/extract_key.py
+
+# wechat-decrypt 派生密钥提取工具
+COPY docker/find_all_keys_linux.py /usr/local/bin/wechat-decrypt/find_all_keys_linux.py
+COPY docker/key_utils.py /usr/local/bin/wechat-decrypt/key_utils.py
+COPY docker/key_scan_common.py /usr/local/bin/wechat-decrypt/key_scan_common.py
+COPY docker/wd_config.py /usr/local/bin/wechat-decrypt/config.py
+COPY docker/auto_extract_keys.sh /usr/local/bin/auto_extract_keys.sh
+
+RUN sed -i 's/\r$//' /usr/local/bin/start.sh /usr/local/bin/extract_key.py /usr/local/bin/auto_extract_keys.sh && \
+    chmod +x /usr/local/bin/start.sh /usr/local/bin/extract_key.py /usr/local/bin/auto_extract_keys.sh && \
+    pip3 install pycryptodome 2>/dev/null || true
 
 EXPOSE 5901 6080 8899
 CMD ["/usr/local/bin/start.sh"]

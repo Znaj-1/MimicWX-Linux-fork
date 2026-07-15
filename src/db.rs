@@ -433,29 +433,31 @@ impl DbManager {
 
     /// 用指定密钥尝试打开加密数据库
     fn try_open_db_with_key(path: &Path, db_name: &str, key_hex: &str, key_bytes: &[u8]) -> Result<Connection> {
+        // 先尝试 PRAGMA key (跳过 PBKDF2, 适用于派生密钥)
+        // 失败再尝试 sqlite3_key (PBKDF2 派生, 适用于主密钥)
+        if key_bytes.len() == 48 || key_bytes.len() == 32 {
+            // 尝试1: PRAGMA key = "x'<hex>'" (跳过 PBKDF2, 派生密钥模式)
+            if let Ok(conn) = Self::try_pragma_key(path, db_name, key_hex) {
+                return Ok(conn);
+            }
+        }
+
+        // 尝试2: sqlite3_key() + PBKDF2 (主密钥模式)
         let conn = Connection::open_with_flags(
             path,
             rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
                 | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
         ).with_context(|| format!("打开数据库失败: {}", path.display()))?;
 
-        if key_bytes.len() == 48 {
-            // 已派生密钥: PRAGMA key = "x'<96hex>'" 跳过 PBKDF2
-            let pragma = format!("PRAGMA key = \"x'{}'\";", key_hex);
-            conn.execute_batch(&pragma)
-                .with_context(|| format!("PRAGMA key 失败: {}", db_name))?;
-        } else {
-            // 原始密钥: sqlite3_key() + PBKDF2 派生
-            let rc = unsafe {
-                let handle = conn.handle();
-                sqlite3_key(
-                    handle as *mut std::ffi::c_void,
-                    key_bytes.as_ptr(),
-                    key_bytes.len() as std::ffi::c_int,
-                )
-            };
-            anyhow::ensure!(rc == 0, "sqlite3_key() 失败, rc={}", rc);
-        }
+        let rc = unsafe {
+            let handle = conn.handle();
+            sqlite3_key(
+                handle as *mut std::ffi::c_void,
+                key_bytes.as_ptr(),
+                key_bytes.len() as std::ffi::c_int,
+            )
+        };
+        anyhow::ensure!(rc == 0, "sqlite3_key() 失败, rc={}", rc);
 
         conn.execute_batch("PRAGMA cipher_compatibility = 4;")?;
         conn.execute_batch("PRAGMA wal_autocheckpoint = 0;")?;
@@ -466,7 +468,36 @@ impl DbManager {
             "SELECT count(*) FROM sqlite_master", [], |row| row.get(0),
         ).with_context(|| format!("数据库解密验证失败: {}", db_name))?;
 
-        trace!("🔓 {} 解密成功, {} 个表", db_name, count);
+        trace!("🔓 {} 解密成功 (sqlite3_key), {} 个表", db_name, count);
+        Ok(conn)
+    }
+
+    /// 用 PRAGMA key = "x'...'" 尝试打开数据库 (跳过 PBKDF2, 派生密钥模式)
+    fn try_pragma_key(path: &Path, db_name: &str, key_hex: &str) -> Result<Connection> {
+        let conn = Connection::open_with_flags(
+            path,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
+                | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        ).map_err(|e| anyhow::anyhow!("打开失败: {}", e))?;
+
+        let pragma = format!("PRAGMA key = \"x'{}'\";", key_hex);
+        conn.execute_batch(&pragma)
+            .map_err(|e| anyhow::anyhow!("PRAGMA key 失败: {}", e))?;
+
+        conn.execute_batch("PRAGMA cipher_compatibility = 4;")
+            .map_err(|e| anyhow::anyhow!("cipher_compatibility 失败: {}", e))?;
+        conn.execute_batch("PRAGMA wal_autocheckpoint = 0;")
+            .map_err(|e| anyhow::anyhow!("wal_autocheckpoint 失败: {}", e))?;
+        conn.execute_batch("PRAGMA query_only = ON;")
+            .map_err(|e| anyhow::anyhow!("query_only 失败: {}", e))?;
+        conn.execute_batch(&format!("PRAGMA busy_timeout = {};", DB_BUSY_TIMEOUT_MS))
+            .map_err(|e| anyhow::anyhow!("busy_timeout 失败: {}", e))?;
+
+        let count: i32 = conn.query_row(
+            "SELECT count(*) FROM sqlite_master", [], |row| row.get(0),
+        ).map_err(|e| anyhow::anyhow!("解密验证失败: {}", e))?;
+
+        debug!("🔓 {} 解密成功 (PRAGMA key/派生密钥), {} 个表", db_name, count);
         Ok(conn)
     }
 

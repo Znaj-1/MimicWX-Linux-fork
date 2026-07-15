@@ -224,10 +224,10 @@ async fn main() -> Result<()> {
                         None
                     }
                 }
-            } else {
-                warn!("[warn] 密钥文件格式异常 (长度: {}), 跳过", key.len());
-                None
-            }
+        }
+        Some(key) => {
+            warn!("[warn] 密钥格式异常 (长度: {}), 跳过", key.len());
+            None
         }
         None => {
             warn!("[warn] 未找到密钥文件 (wechat_key.txt 和 wechat_keys.json 均不存在), 数据库解密功能不可用");

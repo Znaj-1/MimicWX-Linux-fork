@@ -14,41 +14,28 @@ fi
 
 echo "[auto_keys] db_dir=$DB_DIR"
 
-# 写临时 config
-cat > /tmp/wd_config.json <<CONF
+# 创建 config.json（find_all_keys_linux.py 的 load_config() 读这个文件）
+WD_DIR=/usr/local/bin/wechat-decrypt
+cat > "$WD_DIR/config.json" <<CONF
 {
-  "db_dir": "$DB_DIR",
-  "keys_file": "all_keys.json",
-  "decrypted_dir": "decrypted",
-  "decoded_image_dir": "decoded_images",
-  "wechat_process": "wechat",
-  "image_aes_key": "",
-  "image_xor_key": 0
+    "db_dir": "$DB_DIR",
+    "keys_file": "all_keys.json",
+    "decrypted_dir": "decrypted",
+    "decoded_image_dir": "decoded_images",
+    "wechat_process": "wechat",
+    "image_aes_key": "",
+    "image_xor_key": 0
 }
 CONF
 
 # 提取密钥
-cd /usr/local/bin/wechat-decrypt
-python3 -c "
-import json, sys, os
-sys.path.insert(0, '.')
-
-# 覆盖 config
-import importlib
-import wd_config as config
-config._config_path = '/tmp/wd_config.json'
-config._config = json.load(open('/tmp/wd_config.json'))
-
-# 运行提取
-exec(open('find_all_keys_linux.py').read())
-" 2>&1 | tail -5
+cd "$WD_DIR"
+PYTHONPATH="$WD_DIR" python3 find_all_keys_linux.py 2>&1 | tail -10
 
 # 转成 wechat_keys.json
 python3 -c "
 import json, os
-keys_file = '/usr/local/bin/wechat-decrypt/all_keys.json'
-if not os.path.exists(keys_file):
-    keys_file = 'all_keys.json'
+keys_file = '$WD_DIR/all_keys.json'
 if not os.path.exists(keys_file):
     print('[auto_keys] all_keys.json 不存在, 提取可能失败')
     exit(1)

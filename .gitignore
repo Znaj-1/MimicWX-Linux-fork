@@ -22,6 +22,9 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 
+# Environment config (每台机器各自配置，不提交)
+.env
+
 # Debug dumps
 *.txt
 !README.txt

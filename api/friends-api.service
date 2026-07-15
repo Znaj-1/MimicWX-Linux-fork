@@ -1,0 +1,14 @@
+[Unit]
+Description=MimicWX Friends API - friends/groups classification
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/MimicWX-Linux/api
+EnvironmentFile=%h/MimicWX-Linux/api/.env
+ExecStart=/usr/bin/python3 %h/MimicWX-Linux/api/friends_api.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

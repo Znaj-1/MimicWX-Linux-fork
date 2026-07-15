@@ -111,30 +111,39 @@ async fn main() -> Result<()> {
         }
     }
 
-    // ⑥ 读取数据库密钥 (内存扫描提取) + 初始化 DbManager
-    // extract_key.py 在后台持续运行 (由 start.sh 以 root 启动, 无超时)
-    // 这里只需等待密钥文件出现
+    // ⑥ 读取数据库密钥 + 初始化 DbManager
+    // 优先级: wechat_key.txt (主密钥/派生密钥) → wechat_keys.json (派生密钥映射)
     let key_paths = ["/home/wechat/.xwechat/wechat_key.txt", "/tmp/wechat_key.txt"];
+    let keys_json_paths = ["/home/wechat/.xwechat/wechat_keys.json", "/tmp/wechat_keys.json"];
     for i in 0..60 {
-        if key_paths.iter().any(|p| std::path::Path::new(p).exists()) {
+        if key_paths.iter().any(|p| std::path::Path::new(p).exists())
+            || keys_json_paths.iter().any(|p| std::path::Path::new(p).exists()) {
             break;
         }
         if i == 0 {
-            info!("[key] 等待 extract_key.py 提取密钥...");
+            info!("[key] 等待密钥文件出现...");
         }
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     }
 
-    let key_path = key_paths.iter()
-        .find(|p| std::path::Path::new(p).exists())
-        .copied()
-        .unwrap_or(key_paths[0]);
+    // 优先读 wechat_key.txt, 没有则从 wechat_keys.json 取第一个密钥
+    let key_hex = key_paths.iter()
+        .find_map(|p| std::fs::read_to_string(p).ok())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .or_else(|| {
+            // 从 wechat_keys.json 取第一个密钥作为初始化密钥
+            keys_json_paths.iter()
+                .find_map(|p| std::fs::read_to_string(p).ok())
+                .and_then(|content| {
+                    let map: std::collections::HashMap<String, String> = serde_json::from_str(&content).ok()?;
+                    map.into_values().next()
+                })
+        });
 
-    let db_manager: Option<Arc<db::DbManager>> = match std::fs::read_to_string(key_path) {
-        Ok(key) => {
-            let key = key.trim().to_string();
-            if key.len() == 96 || key.len() == 64 {
-                info!("[key] 数据库密钥已获取 ({}...{}) [{}hex]", &key[..8], &key[key.len()-8..], key.len());
+    let db_manager: Option<Arc<db::DbManager>> = match key_hex {
+        Some(key) if key.len() == 96 || key.len() == 64 => {
+            info!("[key] 数据库密钥已获取 ({}...{}) [{}hex]", &key[..8], &key[key.len()-8..], key.len());
 
                 // 查找数据库目录
                 let db_dir = find_db_dir();
@@ -220,8 +229,8 @@ async fn main() -> Result<()> {
                 None
             }
         }
-        Err(_) => {
-            warn!("[warn] 未找到密钥文件, 数据库解密功能不可用");
+        None => {
+            warn!("[warn] 未找到密钥文件 (wechat_key.txt 和 wechat_keys.json 均不存在), 数据库解密功能不可用");
             None
         }
     };

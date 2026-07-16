@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MimicWX-Linux API 文档</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --port-8899: #58a6ff;
+    --port-9000: #3fb950;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 40px 20px;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 8px; }
+  .subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 32px; }
+  .port-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .port-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .port-badge {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-family: 'SF Mono', monospace;
+  }
+  .port-8899 { background: rgba(88,166,255,0.15); color: var(--port-8899); border: 1px solid rgba(88,166,255,0.3); }
+  .port-9000 { background: rgba(63,185,80,0.15); color: var(--port-9000); border: 1px solid rgba(63,185,80,0.3); }
+  .port-title { font-size: 18px; font-weight: 600; }
+  .port-desc { color: var(--text-dim); font-size: 14px; }
+  .endpoint {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .endpoint:hover { border-color: var(--accent); }
+  .ep-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .method {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', monospace;
+    min-width: 52px;
+    text-align: center;
+  }
+  .m-get { background: rgba(63,185,80,0.15); color: var(--green); }
+  .m-post { background: rgba(210,153,22,0.15); color: var(--orange); }
+  .m-delete { background: rgba(248,81,73,0.15); color: var(--red); }
+  .m-ws { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .ep-path { font-family: 'SF Mono', monospace; font-size: 14px; color: var(--accent); }
+  .ep-name { font-size: 14px; font-weight: 500; }
+  .ep-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(139,148,158,0.15);
+    color: var(--text-dim);
+  }
+  .ep-tag.auth { background: rgba(248,81,73,0.1); color: var(--red); }
+  .ep-tag.noauth { background: rgba(63,185,80,0.1); color: var(--green); }
+  .ep-body { margin-top: 10px; font-size: 13px; }
+  .ep-body pre {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    overflow-x: auto;
+    margin-top: 6px;
+  }
+  .ep-desc { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+  .field { color: var(--orange); }
+  .type { color: var(--purple); }
+  .str { color: var(--green); }
+  .comment { color: var(--text-dim); }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-num { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .summary-label { font-size: 13px; color: var(--text-dim); }
+  .section-title { font-size: 16px; font-weight: 600; margin: 20px 0 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>MimicWX-Linux API 文档</h1>
+  <p class="subtitle">服务器: 172.17.104.185 · 共 15 个接口 · 2 个服务</p>
+
+  <div class="summary-grid">
+    <div class="summary-card"><div class="summary-num">15</div><div class="summary-label">总接口数</div></div>
+    <div class="summary-card"><div class="summary-num">2</div><div class="summary-label">服务</div></div>
+    <div class="summary-card"><div class="summary-num">8899</div><div class="summary-label">MimicWX 端口</div></div>
+    <div class="summary-card"><div class="summary-num">9000</div><div class="summary-label">Friends API 端口</div></div>
+  </div>
+
+  <!-- ============ Port 8899 ============ -->
+  <div class="port-section">
+    <div class="port-header">
+      <span class="port-badge port-8899">:8899</span>
+      <span class="port-title">MimicWX 内置接口</span>
+      <span class="port-desc">— Rust 主程序，Docker 容器内</span>
+    </div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">
+      认证方式: <code style="color:var(--accent)">Authorization: Bearer &lt;token&gt;</code> 或 <code style="color:var(--accent)">?token=&lt;token&gt;</code>
+    </p>
+
+    <!-- 免认证 -->
+    <div class="section-title">免认证</div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-get">GET</span>
+        <span class="ep-path">/status</span>
+        <span class="ep-name">服务状态</span>
+        <span class="ep-tag noauth">免认证</span>
+      </div>
+      <p class="ep-desc">返回服务运行状态、版本、运行时间、监听数、数据库状态、联系人数</p>
+      <div class="ep-body">
+        <span class="comment">Response:</span>
+        <pre>{ <span class="field">"status"</span>: <span class="str">"LoggedIn"</span>, <span class="field">"version"</span>: <span class="str">"0.1.0"</span>, <span class="field">"uptime_secs"</span>: <span class="type">7200</span>, <span class="field">"db_available"</span>: <span class="type">true</span>, <span class="field">"listen_count"</span>: <span class="type">3</span>, <span class="field">"contacts"</span>: <span class="type">16</span> }</pre>
+      </div>
+    </div>
+
+    <!-- 需要认证 -->
+    <div class="section-title">联系人 & 会话</div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-get">GET</span>
+        <span class="ep-path">/contacts</span>
+        <span class="ep-name">联系人列表</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">从数据库读取所有联系人（需要数据库解密成功）</p>
+      <div class="ep-body">
+        <span class="comment">Response:</span>
+        <pre>{ <span class="field">"contacts"</span>: [{ <span class="field">"username"</span>: <span class="str">"wxid_xxx"</span>, <span class="field">"display_name"</span>: <span class="str">"昵称"</span>, <span class="field">"remark"</span>: <span class="str">"备注"</span>, <span class="field">"alias"</span>: <span class="str">"微信号"</span> }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-get">GET</span>
+        <span class="ep-path">/sessions</span>
+        <span class="ep-name">会话列表</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">优先从数据库读取，失败时 fallback 到 AT-SPI 读取当前窗口会话</p>
+    </div>
+
+    <!-- 消息 -->
+    <div class="section-title">消息</div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-get">GET</span>
+        <span class="ep-path">/messages/new</span>
+        <span class="ep-name">增量新消息</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">从数据库读取增量新消息（每次调用返回上次之后的新消息）</p>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-post">POST</span>
+        <span class="ep-path">/send</span>
+        <span class="ep-name">发送文本消息</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">通过 AT-SPI 模拟操作微信窗口发送消息，DB 可用时自动验证发送结果</p>
+      <div class="ep-body">
+        <span class="comment">Request Body:</span>
+        <pre>{
+  <span class="field">"to"</span>: <span class="str">"显示名或备注名"</span>,      <span class="comment">// 收件人（用 /friends 接口获取的 name）</span>
+  <span class="field">"text"</span>: <span class="str">"消息内容"</span>,         <span class="comment">// 消息文本</span>
+  <span class="field">"at"</span>: [<span class="str">"张三"</span>, <span class="str">"李四"</span>]     <span class="comment">// 要 @ 的人（可选，群聊用）</span>
+}</pre>
+        <span class="comment">Response:</span>
+        <pre>{ <span class="field">"sent"</span>: <span class="type">true</span>, <span class="field">"verified"</span>: <span class="type">true</span>, <span class="field">"message"</span>: <span class="str">"发送成功"</span> }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-post">POST</span>
+        <span class="ep-path">/send_image</span>
+        <span class="ep-name">发送图片</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <div class="ep-body">
+        <span class="comment">Request Body:</span>
+        <pre>{
+  <span class="field">"to"</span>: <span class="str">"显示名"</span>,
+  <span class="field">"file"</span>: <span class="str">"base64编码的图片数据"</span>,
+  <span class="field">"name"</span>: <span class="str">"image.png"</span>          <span class="comment">// 可选，用于推断 MIME</span>
+}</pre>
+      </div>
+    </div>
+
+    <!-- 聊天 & 监听 -->
+    <div class="section-title">聊天 & 监听</div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-post">POST</span>
+        <span class="ep-path">/chat</span>
+        <span class="ep-name">切换聊天窗口</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">切换到指定联系人/群的聊天窗口</p>
+      <div class="ep-body">
+        <span class="comment">Request Body:</span>
+        <pre>{ <span class="field">"who"</span>: <span class="str">"显示名"</span> }</pre>
+        <span class="comment">Response:</span>
+        <pre>{ <span class="field">"success"</span>: <span class="type">true</span>, <span class="field">"chat_name"</span>: <span class="str">"当前聊天名"</span> }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-get">GET</span>
+        <span class="ep-path">/listen</span>
+        <span class="ep-name">监听列表</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">获取当前正在监听的联系人/群列表（独立窗口模式）</p>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-post">POST</span>
+        <span class="ep-path">/listen</span>
+        <span class="ep-name">添加监听</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">为指定联系人/群弹出独立窗口，实时监听消息</p>
+      <div class="ep-body">
+        <span class="comment">Request Body:</span>
+        <pre>{ <span class="field">"who"</span>: <span class="str">"显示名"</span> }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-delete">DELETE</span>
+        <span class="ep-path">/listen</span>
+        <span class="ep-name">移除监听</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <div class="ep-body">
+        <span class="comment">Request Body:</span>
+        <pre>{ <span class="field">"who"</span>: <span class="str">"显示名"</span> }</pre>
+      </div>
+    </div>
+
+    <!-- 命令 -->
+    <div class="section-title">通用命令</div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-post">POST</span>
+        <span class="ep-path">/command</span>
+        <span class="ep-name">通用命令执行</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">通过一个接口执行多种操作，支持以下命令：</p>
+      <div class="ep-body">
+        <span class="comment">Request Body:</span>
+        <pre>{ <span class="field">"cmd"</span>: <span class="str">"命令字符串"</span> }</pre>
+        <span class="comment">支持的命令:</span>
+        <pre><span class="str">"status"</span>              <span class="comment"># 查看状态</span>
+<span class="str">"atmode"</span>              <span class="comment"># 切换仅@模式</span>
+<span class="str">"reload"</span>              <span class="comment"># 重新加载 config.toml</span>
+<span class="str">"listen 张三"</span>         <span class="comment"># 添加监听</span>
+<span class="str">"unlisten 张三"</span>       <span class="comment"># 移除监听</span>
+<span class="str">"send 张三 你好"</span>      <span class="comment"># 发送消息</span></pre>
+      </div>
+    </div>
+
+    <!-- 调试 -->
+    <div class="section-title">调试 & WebSocket</div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-get">GET</span>
+        <span class="ep-path">/debug/tree?depth=5</span>
+        <span class="ep-name">AT-SPI2 控件树</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">dump 微信窗口的 AT-SPI2 控件树，depth 控制深度（默认5，最大15）</p>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-get">GET</span>
+        <span class="ep-path">/debug/sessions</span>
+        <span class="ep-name">会话容器子树</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">只 dump 会话容器的子树（深度4），用于调试会话列表</p>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-ws">WS</span>
+        <span class="ep-path">/ws</span>
+        <span class="ep-name">WebSocket 实时推送</span>
+        <span class="ep-tag auth">需认证</span>
+      </div>
+      <p class="ep-desc">WebSocket 连接，实时推送新消息和自发消息事件。每 30 秒心跳 Ping。</p>
+      <div class="ep-body">
+        <span class="comment">推送消息格式:</span>
+        <pre><span class="comment"># 收到新消息</span>
+{ <span class="field">"type"</span>: <span class="str">"received"</span>, <span class="field">"from"</span>: <span class="str">"发送者"</span>, <span class="field">"text"</span>: <span class="str">"消息内容"</span> }
+
+<span class="comment"># 自己发送的消息</span>
+{ <span class="field">"type"</span>: <span class="str">"sent"</span>, <span class="field">"to"</span>: <span class="str">"收件人"</span>, <span class="field">"text"</span>: <span class="str">"消息内容"</span>, <span class="field">"verified"</span>: <span class="type">true</span> }</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Port 9000 ============ -->
+  <div class="port-section">
+    <div class="port-header">
+      <span class="port-badge port-9000">:9000</span>
+      <span class="port-title">Friends API</span>
+      <span class="port-desc">— Python 脚本，systemd 管理</span>
+    </div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">
+      免认证 · 代理 MimicWX 的 /contacts + /sessions，过滤后返回可发消息的对象
+    </p>
+
+    <div class="endpoint">
+      <div class="ep-row">
+        <span class="method m-get">GET</span>
+        <span class="ep-path">/friends</span>
+        <span class="ep-name">好友/群聊分类</span>
+        <span class="ep-tag noauth">免认证</span>
+      </div>
+      <p class="ep-desc">
+        合并 /contacts + /sessions，过滤系统账号（weixin、filehelper、gh_* 等），只返回有会话记录的好友 + 全部群聊。
+        返回的 <code style="color:var(--accent)">name</code> 字段可直接用作 /send 接口的 <code style="color:var(--accent)">to</code> 参数。
+      </p>
+      <div class="ep-body">
+        <span class="comment">Response:</span>
+        <pre>{
+  <span class="field">"friends"</span>: [
+    { <span class="field">"name"</span>: <span class="str">"老干妈"</span>, <span class="field">"username"</span>: <span class="str">"wxid_xxx"</span>, <span class="field">"remark"</span>: <span class="str">"老干妈"</span>, <span class="field">"alias"</span>: <span class="str">"yeepay_1"</span> }
+  ],
+  <span class="field">"groups"</span>: [
+    { <span class="field">"name"</span>: <span class="str">"测试群"</span>, <span class="field">"username"</span>: <span class="str">"52265460221@chatroom"</span> }
+  ]
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 快速参考 ============ -->
+  <div class="port-section">
+    <div class="port-header">
+      <span class="port-title">快速参考</span>
+    </div>
+
+    <div class="section-title">常用 curl 示例</div>
+    <pre style="background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;overflow-x:auto;margin-bottom:16px">
+<span class="comment"># 查看服务状态（免认证）</span>
+curl http://localhost:8899/status
+
+<span class="comment"># 获取好友/群聊分类</span>
+curl http://localhost:9000/friends
+
+<span class="comment"># 获取联系人列表</span>
+curl -H <span class="str">"Authorization: Bearer &lt;token&gt;"</span> http://localhost:8899/contacts
+
+<span class="comment"># 获取新消息</span>
+curl -H <span class="str">"Authorization: Bearer &lt;token&gt;"</span> http://localhost:8899/messages/new
+
+<span class="comment"># 发送消息</span>
+curl -X POST http://localhost:8899/send \
+  -H <span class="str">"Authorization: Bearer &lt;token&gt;"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"to":"老干妈","text":"你好"}'</span>
+
+<span class="comment"># 添加监听</span>
+curl -X POST http://localhost:8899/listen \
+  -H <span class="str">"Authorization: Bearer &lt;token&gt;"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"who":"老干妈"}'</span>
+
+<span class="comment"># WebSocket 连接</span>
+wscat -c <span class="str">"ws://localhost:8899/ws?token=&lt;token&gt;"</span></pre>
+
+    <div class="section-title">服务管理</div>
+    <pre style="background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;overflow-x:auto">
+<span class="comment"># MimicWX (Docker)</span>
+docker ps                              <span class="comment"># 查看状态</span>
+docker-compose restart                 <span class="comment"># 重启</span>
+docker logs mimicwx-linux --tail 50    <span class="comment"># 查看日志</span>
+
+<span class="comment"># Friends API (systemd)</span>
+systemctl --user status friends-api    <span class="comment"># 查看状态</span>
+systemctl --user restart friends-api   <span class="comment"># 重启</span>
+journalctl --user -u friends-api -f    <span class="comment"># 查看日志</span></pre>
+  </div>
+</div>
+</body>
+</html>

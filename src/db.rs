@@ -768,6 +768,11 @@ impl DbManager {
     // =================================================================
 
     /// 获取新消息 (遍历所有 message_N.db 持久连接)
+    /// 重置消息水位线 (让 get_new_messages 返回所有历史消息)
+    pub async fn reset_watermarks(&self) {
+        *self.watermarks.lock().await = HashMap::new();
+    }
+
     pub async fn get_new_messages(&self) -> Result<Vec<DbMessage>> {
         let current_watermarks = self.watermarks.lock().await.clone();
 

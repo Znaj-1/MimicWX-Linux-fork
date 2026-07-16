@@ -250,6 +250,7 @@ pub fn build_router(state: Arc<AppState>) -> Router {
     let protected = Router::new()
         .route("/contacts", get(get_contacts))
         .route("/messages/new", get(get_new_messages))
+        .route("/messages/history", get(get_history_messages))
         .route("/send", post(send_message))
         .route("/send_image", post(send_image))
         .route("/sessions", get(get_sessions))
@@ -365,6 +366,15 @@ async fn get_contacts(State(state): State<Arc<AppState>>) -> Result<impl IntoRes
 
 async fn get_new_messages(State(state): State<Arc<AppState>>) -> Result<impl IntoResponse, ApiError> {
     let db = state.db.as_ref().ok_or_else(|| ApiError::unavailable("数据库不可用"))?;
+    match db.get_new_messages().await {
+        Ok(msgs) => Ok(Json(serde_json::to_value(msgs).unwrap_or_default())),
+        Err(e) => Err(ApiError::internal(format!("消息查询失败: {e}"))),
+    }
+}
+
+async fn get_history_messages(State(state): State<Arc<AppState>>) -> Result<impl IntoResponse, ApiError> {
+    let db = state.db.as_ref().ok_or_else(|| ApiError::unavailable("数据库不可用"))?;
+    db.reset_watermarks().await;
     match db.get_new_messages().await {
         Ok(msgs) => Ok(Json(serde_json::to_value(msgs).unwrap_or_default())),
         Err(e) => Err(ApiError::internal(format!("消息查询失败: {e}"))),
